@@ -1,0 +1,17 @@
+
+
+
+main:
+        load f, secret % set up a secret
+	store f, 1
+        spbarr
+        store 0, 1
+	x <- 0
+	beqz x, L1
+        spbarr
+L2:
+	load x, 1
+	load eax, x % This shou.d show us the secret value
+	spbarr
+L1:
+	skip

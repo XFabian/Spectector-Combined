@@ -1,0 +1,4 @@
+c([],[]).
+low([]).
+keep_sym([symbolicarray, publicarray]).
+ign([]).

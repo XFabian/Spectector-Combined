@@ -1,0 +1,27 @@
+% See combined15_old.muasm for details
+test:
+    spbarr
+    retstart
+    load tmp,sp/\140737488355327
+    sp<-sp+8
+    jmp tmp
+main:
+    dx <- 5
+    skip
+    x <-  0
+    beqz x , L2 % Since X is 0 this should misspeculate and should handle the call instruction to fill RSB after with return address after the call
+    spbarr
+    callstart
+    sp<-sp-8
+    store pc+2, sp/\140737488355327
+    jmp 0
+L100:
+    load eax, secret_addr % Should never be executed
+    load edi, eax
+    spbarr
+L2:
+    skip
+    retstart
+    load tmp,sp/\140737488355327 % We just return and this should speculate under V5 semantics so we execute the function
+    sp<-sp+8
+    jmp tmp    

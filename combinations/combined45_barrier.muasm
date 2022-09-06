@@ -1,0 +1,28 @@
+manipStack:
+    sp <- sp + 8 % pop return address so we jumo back to main
+    retstart
+    load tmp,sp/\140737488355327
+    sp<-sp+8
+    jmp tmp
+speculate:
+    callstart
+    sp<-sp-8
+    store pc+2, sp/\140737488355327
+    jmp manipStack
+    spbarr
+    load eax, 0 % Will never be executed
+    load edi, eax
+    spbarr
+    retstart
+    load tmp,sp/\140737488355327
+    sp<-sp+8
+    jmp tmp
+main:
+    load f, secret
+    store f, 0
+    spbarr
+    store 1, 0
+    callstart
+    sp<-sp-8
+    store pc+2, sp/\140737488355327
+    jmp speculate

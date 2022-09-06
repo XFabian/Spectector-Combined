@@ -1,0 +1,16 @@
+
+
+
+main:
+        load f, secret % set up a secret for spectector
+	store f, 1
+        spbarr
+        store 0, 1 % overwrite the secret in memory
+	x <- 0
+	beqz x, L1
+L2:
+	load x, 1
+	load eax, x % This shou.d show us the secret value
+	spbarr
+L1:
+	skip

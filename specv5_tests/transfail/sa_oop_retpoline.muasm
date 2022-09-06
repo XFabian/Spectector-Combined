@@ -1,0 +1,34 @@
+manipulate_return_address:
+    sp <- sp + 8
+    callstart
+    sp<-sp-8
+    store pc+2, sp/\140737488355327
+    jmp return_new
+speculate:
+    skip
+    jmp speculate
+return_new:
+    sp <- sp + 8
+    retstart
+    load tmp,sp/\140737488355327
+    sp<-sp+8
+    jmp tmp
+call_leak:
+    callstart
+    sp<-sp-8
+    store pc+2, sp/\140737488355327
+    jmp manipulate_return_address
+    load eax, secret
+    load edx, eax
+    spbarr
+    retstart
+    load tmp,sp/\140737488355327
+    sp<-sp+8
+    jmp tmp
+call_start:
+    callstart
+    sp<-sp-8
+    store pc+2, sp/\140737488355327
+    jmp call_leak
+call_end:
+    skip
