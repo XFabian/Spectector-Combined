@@ -1,0 +1,16 @@
+spec:
+    endbr
+    spbarr
+    store 1, 0 
+    load x, 1
+	load eax, x % This shou.d show us the secret value
+	spbarr
+
+main:
+    load f, secret
+    store f, 0
+    spbarr
+    rax <- L2 
+    indirect_jump rax
+L2:
+    skip

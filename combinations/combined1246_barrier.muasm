@@ -1,0 +1,24 @@
+main:
+    load f, secret
+    store f, 0
+    spbarr
+    store 1, 0 
+    eax <- 5
+    retstart
+    load tmp,sp/\140737488355327
+    sp<-sp+8
+    jmp tmp
+L1:
+    rax <- L2
+    indirect_jump rax
+spec:
+    endbr
+    spbarr
+    x <-  0
+    beqz x , L2 
+L100:
+    load eax, 1 % Should never be executed
+    load edi, eax
+    spbarr
+L2:
+    skip

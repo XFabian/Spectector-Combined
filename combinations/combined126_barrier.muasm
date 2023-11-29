@@ -1,0 +1,18 @@
+main:
+    retstart
+    load tmp,sp/\140737488355327
+    sp<-sp+8
+    jmp tmp
+spec:
+    rax <- L2 % Spec v5 reaches here
+    indirect_jump rax
+L100:
+    endbr
+    spbarr
+    x <- 0
+    beqz x, L2
+    load eax, secret_addr % Should never be executed
+    load edi, eax
+    spbarr
+L2:
+    skip
