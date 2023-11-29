@@ -1,0 +1,19 @@
+main:
+    load f, secret % set up a secret for spectector
+	store f, 1
+    spbarr
+    store 0, 1 % overwrite the secret in memory
+    eax <- 5
+    retstart
+    load tmp,sp/\140737488355327
+    sp<-sp+8
+    jmp tmp
+spec:
+    x <-  0
+    beqz x , L2 
+L100:
+    load eax, 1 % Should never be executed
+    load edi, eax
+    spbarr
+L2:
+    skip

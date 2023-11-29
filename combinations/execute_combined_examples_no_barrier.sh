@@ -16,12 +16,12 @@ exec_base() {
 }
  echo "--------------Executions of combined14 under each respective version--------------------"
 exec_version "combined14" 14
-exec_version "combined14" 41 # Corect versoin of version 4
+exec_version "combined14" 4
 exec_version "combined14" 1
 exec_base "combined14"
 echo "--------------Executions of combined45 under each respective version--------------------"
 exec_version "combined45" 45
-exec_version "combined45" 41
+exec_version "combined45" 4
 exec_version "combined45" 5
 exec_base "combined45"
 echo "--------------Executions of combined15 under each respective version--------------------"

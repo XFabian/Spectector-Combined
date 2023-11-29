@@ -1,0 +1,12 @@
+main:
+    rax <- L2 
+    indirect_jump rax
+spec:
+    endbr
+    x <-  0
+    beqz x , L2 
+L100:
+    load eax, secret_addr % Should never be executed
+    load edi, eax
+L2:
+    skip

@@ -1,0 +1,31 @@
+manipStack:
+    sp <- sp + 8 % pop return address so we jumo back to main
+    retstart
+    load tmp,sp/\140737488355327
+    sp<-sp+8
+    jmp tmp
+speculate:
+    callstart
+    sp<-sp-8
+    store pc+2, sp/\140737488355327
+    jmp manipStack
+    rax <- L2 % Spec v5 reaches here
+    indirect_jump rax
+L100:
+    endbr
+    x <- 0
+    beqz x, L2
+    store 1, 0 % Overwrite secret, will be skipped
+    load eax, 0 % Should never be executed
+    load edi, eax
+    spbarr
+main:
+    load f, secret % prepare a secret 
+    store f, 0
+    spbarr
+    callstart
+    sp<-sp-8
+    store pc+2, sp/\140737488355327
+    jmp speculate
+L2:
+    skip
