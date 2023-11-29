@@ -69,11 +69,10 @@ noninter_check(Low, C0) :-
 	  log('[checking speculative non-interference]'),
 	  (C0 = xc(_,C0n,_); C0 = xc_v4(_, C0n, _, _, _, _);
               C0 = xc_v5(_, c(M_, A_, ST_), _, _), C0n = c(M_,A_);
-                  C0 = f(15, xc_v5(_, c(M_, A_, ST_), _, _)), C0n = c(M_,A_);
-                      C0 = f(14, xc14(_, c(M_,A_), _)), C0n = c(M_,A_);
-                          C0 = f(45, xc_v8(_, c(M_,A_, ST_), _, _)), C0n = c(M_,A_);
-                              C0 = f(145, xc_v9(_, c(M_,A_, ST_), _, _)), C0n = c(M_,A_);
-                               C0 = f(41, xc41(_, c(M_,A_), _)), C0n = c(M_,A_)
+                  C0 = f(sls, xc(_, C0n, _));
+                      C0 = f(2, xc_v2(_, c(M_, A_, _), _)), C0n = c(M_, A_);
+                          C0 = f(X,xc_c(_, C0n, _, _), _); % For the combinations
+                                      C0 = f(4, xc41(_, c(M_,A_), _)), C0n = c(M_,A_)
           ),
 	  noninter_cex(Low, C0n, Trace, MaxTime, Safe),
 	  collect_stats(Safe, Trace),

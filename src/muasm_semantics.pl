@@ -27,8 +27,11 @@
 :- use_module(spectector_stats).
 :- use_module(engine(messages_basic), [message/2]).
 :- use_module(semanticsv5 , [xrunv5/3]).
+:- use_module(semanticsv2 , [xrunv2/3]).
+:- use_module(semantics_sls , [xrunvSLS/3]).
+%:- use_module(semanticsV5_cyclic , [xrunv5c/3]). % Cyclic
 :- use_module(semanticsv4_noBranch, [xrunv41/3]).
-:- use_module(semantics_base, [xrun_c/4]).
+:- use_module(semantics_base, [xrun_c/6]).
 % ---------------------------------------------------------------------------
 :- doc(section, "Evaluation (both spec and non-spec)").
 
@@ -37,7 +40,9 @@
 mrun(C0) := CT :-
 	with_trace(Trace, mrun_(C0,C)),
 	CT = (C,Trace).
+    
 
+% delegate to mrun combination?    
 % Run c/2 or xc/3 configurations
 mrun_(C0) := C :- C0 = c(_,_), !, C = ~run(C0, ~get_limit(step)).
 mrun_(C0) := C :- C0 = xc(_,_,_), !, C = ~xrun(C0, ~get_limit(step)).
@@ -45,72 +50,128 @@ mrun_(C0) := C :- C0 = xc(_,_,_), !, C = ~xrun(C0, ~get_limit(step)).
 mrun_(C0) := C :- C0 = xc_v4(_,Conf,_,_,_,_), !,
     write('Do not use. For testing purposes'), nl, C = ~xrunv41(C0, ~get_limit(step)).
 % V4 2
-mrun_(f(41,C0)) := C :- C0 = xc41(Ctr, Conf, S), !, write('In mrun for Spectre V4 Test'), nl,  C = ~xrunv41(C0, ~get_limit(step)).
+mrun_(f(4,C0)) := C :- C0 = xc41(Ctr, Conf, S), !, write('In V4'), nl,  C = ~xrunv41(C0, ~get_limit(step)).
 % V5
-mrun_(C0) := C :- C0 = xc_v5(Ctr,Conf,R,S), !, write('In v5'),  C = ~xrunv5(C0, ~get_limit(step)).
+mrun_(C0) := C :- C0 = xc_v5(Ctr,Conf,R,S), !, write('In V5'),  C = ~xrunv5(C0, ~get_limit(step)).
+%SLS
+mrun_(f(sls, C0)) := C :- C0 = xc(Ctr,Conf,S), !, write('In SLS'),  C = ~xrunvSLS(C0, ~get_limit(step)).
+% V2
+mrun_(f(2, C0)) := C :- C0 = xc_v2(Ctr,Conf,S), !, write('In V2'),  C = ~xrunv2(C0, ~get_limit(step)).
 
-% Combinations
-mrun_(f(15,C0)) := C :- C0 = xc_v5(Ctr,Conf,_,_), !, write('Calling 15'),
-    Conf = c(M,A,S), 
-    C1 = xc_c(0, c(M,A), [], []),
-    C = ~xrun_c(C1, [call,ret, branch], ~get_limit(step)). %C = ~xrunv6(C0, ~get_limit(step)).
+% 6 = SLS
+% Combinations used to set the metaparameter Z
+mrun_(f(15,C0, _)) := C :- !, write('Calling 15'),
+    C0 = xc_c(0,_, [], []),
+    C = ~xrun_c(C0, [call,ret, branch], ~get_limit(step), _, v5). %C = ~xrunv6(C0, ~get_limit(step)).
 
 
+mrun_(f(14,C0, _)) := C :- !, write('Calling 14'),
+    C0 = xc_c(0, _, [], []),
+    C = ~xrun_c(C0, [store, branch], ~get_limit(step), _, _). %C = ~xrunv7(C0, ~get_limit(step)).
 
-mrun_(f(14,C0)) := C :- C0 = xc14(Ctr,Conf,S), !, write('Calling 14'),
-    C1 = xc_c(0, Conf, [], []),
-    C = ~xrun_c(C1, [store, branch], ~get_limit(step)). %C = ~xrunv7(C0, ~get_limit(step)).
+mrun_(f(45,C0,_)) := C :-
+    C0 = xc_c(_,Conf,_,_), !, write('Calling 45'),
+    C = ~xrun_c(C0, [call,ret, store], ~get_limit(step), _, v5).
 
-mrun_(f(45,C0)) := C :- C0 = xc_v8(_,Conf,_,_), !, write('Calling 45'),
-    Conf = c(M,A,S), 
-    C1 = xc_c(0, c(M,A), [], []),
-    C = ~xrun_c(C1, [call,ret, store], ~get_limit(step)).
-    %C = ~xrunv8(C0, ~get_limit(step)).
 
-mrun_(f(145,C0)) := C :- C0 = xc_v9(_,Conf,_,_), !, write('Calling 145'),
-    Conf = c(M,A,S), 
-    C1 = xc_c(0, c(M,A), [], []),
-    C = ~xrun_c(C1, [call,ret, branch, store], ~get_limit(step)).
-    %C = ~xrunv9(C0, ~get_limit(step)).
+mrun_(f(16,C0, _)) := C :-
+    C0 = xc_c(_,Conf,_,_), !, write('Calling 1 + SLS'), nl,
+    C = ~xrun_c(C0, [branch, ret], ~get_limit(step), _, sls).
 
+mrun_(f(46,C0, _)) := C :-
+    C0 = xc_c(_,Conf,_,_), !, write('Calling 4 + SLS'),
+    C = ~xrun_c(C0, [store, ret], ~get_limit(step), _, sls).
+
+
+mrun_(f(12,C0, EndBrLoc)) := C :-
+    C0 = xc_c(_,Conf,_,_), !, write('Calling 1 + 2'),
+    C = ~xrun_c(C0, [branch, indirect_jump], ~get_limit(step), EndBrLoc, _).
+
+mrun_(f(24,C0, EndBrLoc)) := C :-
+    C0 = xc_c(_,Conf,_,_), !, write('Calling 2 + 4'),
+    C = ~xrun_c(C0, [indirect_jump, store], ~get_limit(step), EndBrLoc, _).
+
+mrun_(f(25,C0, EndBrLoc)) := C :-
+    C0 = xc_c(_,Conf,_,_), !, write('Calling 2 + 5'),
+    C = ~xrun_c(C0, [indirect_jump, call, ret], ~get_limit(step), EndBrLoc, v5).
+
+mrun_(f(26,C0, EndBrLoc)) := C :-
+    C0 = xc_c(_,Conf,_,_), !, write('Calling 2 + SLS'),
+    C = ~xrun_c(C0, [indirect_jump, ret], ~get_limit(step), EndBrLoc, sls).
+
+
+% 3 combinations
+mrun_(f(145,C0, _)) := C :-
+    C0 = xc_c(_,Conf,_,_), !, write('Calling 145'), 
+    C = ~xrun_c(C0, [call,ret, branch, store], ~get_limit(step), _, v5).
+
+mrun_(f(146,C0, _)) := C :-
+    C0 = xc_c(_,Conf,_,_), !, write('Calling 1+4+6'), 
+    C = ~xrun_c(C0, [ret, branch, store], ~get_limit(step), _, sls).
+
+mrun_(f(124,C0, EndBrLoc)) := C :-
+    C0 = xc_c(_,Conf,_,_), !, write('Calling 1+2+4'), 
+    C = ~xrun_c(C0, [indirect_jump, branch, store], ~get_limit(step), EndBrLoc, _).
+
+mrun_(f(125,C0, EndBrLoc)) := C :-
+    C0 = xc_c(_,Conf,_,_), !, write('Calling 1+2+5'), 
+    C = ~xrun_c(C0, [call,ret, indirect_jump, branch], ~get_limit(step), EndBrLoc, v5).
+
+mrun_(f(126,C0, EndBrLoc)) := C :-
+    C0 = xc_c(_,Conf,_,_), !, write('Calling 1+2+6'), 
+    C = ~xrun_c(C0, [ret, branch, indirect_jump], ~get_limit(step), EndBrLoc, sls).
+
+mrun_(f(245,C0, EndBrLoc)) := C :-
+    C0 = xc_c(_,Conf,_,_), !, write('Calling 2+4+5'), 
+    C = ~xrun_c(C0, [call, ret, indirect_jump, store], ~get_limit(step), EndBrLoc, v5).
+
+mrun_(f(246,C0, EndBrLoc)) := C :-
+    C0 = xc_c(_,Conf,_,_), !, write('Calling 2+4+6'), 
+    C = ~xrun_c(C0, [ret, indirect_jump, store], ~get_limit(step), EndBrLoc, sls).
+% 4 Combinations
+
+mrun_(f(1245,C0, EndBrLoc)) := C :-
+    C0 = xc_c(_,Conf,_,_), !, write('Calling 1245'), 
+    C = ~xrun_c(C0, [call,ret, branch, store, indirect_jump], ~get_limit(step), EndBrLoc, v5).
     
+mrun_(f(1246,C0, EndBrLoc)) := C :-
+    C0 = xc_c(_,Conf,_,_), !, write('Calling 1246'), 
+    C = ~xrun_c(C0, [ret, branch, store, indirect_jump], ~get_limit(step), EndBrLoc, sls).
+
 :- export(new_c/3).
 new_c(M,A) := c(~map_to_sym(M), ~map_to_sym(A)).
 
 :- export(new_xc/3).
 new_xc(M,A) := xc(0,~new_c(M,A),[]).
 
-
+% base for combined
+:- export(new_xc_c/3).
+new_xc_c(M, A) := xc_c(0, ~new_c(M,A), [], []).
 % Lets define it similar for spectre version 5
 % Note that sigma should consist of memory assignments and a buffer for return addresses for eip
 % This is right now ignored. Since we need it also for the original spectre and not sure how it is implemented there
 :- export(new_xc_v5/3).
 new_xc_v5(M, A) :=  xc_v5(0, c(M1,A1,[]), [], []) :- c(M1, A1) = ~new_c(M,A).
 
-:- export(new_xc_v8/3).
-new_xc_v8(M, A) :=  xc_v8(0, c(M1,A1,[]), [], []) :- c(M1, A1) = ~new_c(M,A).
+:- export(new_xc_v2/4).
+new_xc_v2(M, A, EndBrLoc) :=  xc_v2(0, c(M1,A1, EndBrLoc), []) :- c(M1, A1) = ~new_c(M,A).
 
-:- export(new_xc_v9/3).
-new_xc_v9(M, A) :=  xc_v9(0, c(M1,A1,[]), [], []) :- c(M1, A1) = ~new_c(M,A).
-
-:- export(new_xc14/3).
-new_xc14(M, A) :=  xc14(0, c(M1,A1), []) :- c(M1, A1) = ~new_c(M,A).
 % Examples:
 %   C = ~new_c([], [pc=0]), (C,Trace) = ~concrun(~p_2_5,C0).
 
 :- export(concrun/2).
 % Execute mrun/2 using concolic search (see conc_call/3)
+
+%concrun(f(X, C)) := CT :- nl, nl, write(C), CT = ~concrun(C).
 concrun(C0) := CT :-
-        write(C0),
 	( C0 = c(_,_) -> InConf = C0
 	; C0 = xc(_,C1,_) -> InConf = C1
-        ; C0 = xc_v4(_, C2, _, _, _, _) -> InConf = C2
+        ; C0 = f(4, xc41(_, C2, _)) -> Inconf = C2 % V4 test
         ; C0 = xc_v5(_, c(M1,A1,_), _, _) -> Inconf = c(M1,A1)
-        ; C0 = f(15,xc_v5(_, c(M1,A1,_), _, _)) -> Inconf = c(M1,A1) % V1 + V5
-        ; C0 = f(14,xc14(_, C2, _)) -> Inconf = C2 % 1 + 4 combined
-        ; C0 = f(45,xc_v8(_, c(M1,A1,_),_,  _)) -> Inconf = c(M1,A1) % 4 + 5 combined
-        ; C0 = f(145,xc_v9(_, c(M1,A1,_),_,  _)) -> Inconf = c(M1,A1) % 5 + 4 + 1
-        ; C0 = f(41,xc41(_, C2, _)) -> Inconf = C2 % V4 test
+        ; C0 = f(sls, xc(_,C1,_)) -> InConf = C1
+        ; C0 = f(2, xc_v2(_,c(M1, A1, EndBrLoc),_)) -> InConf = c(M1, A1)
+        ; C0 = f(X,xc_c(_, C2, _, _), _) -> Inconf = C2 % For all the combinations 
+        
 	; fail
 	),
 	conc_call(mrun_(C0,C), InConf, Trace), % TODO: Produce stats if the call fails
@@ -197,6 +258,9 @@ run1(Conf) := Conf2 :-
 % Skip
 run_(skip,c(M,A)) := c(M,A2) :-
     A2 = ~update0(A,pc,~incpc(A)).
+% Endbr instruction
+run_(endbr,c(M,A)) := c(M,A2) :-
+    A2 = ~update0(A,pc,~incpc(A)).
 %X added to detect starts of call for version 5
 run_(callstart, c(M,A)) := c(M,A2) :-
     A2 = ~update0(A,pc,~incpc(A)).
@@ -217,10 +281,15 @@ run_(unknown_pc(L),C0) := C :-
 	message(warning, ['Pass through a non declared Label! ', L]), % TODO: inefficient! (remember somewhere else)
 	new_unknown_label(string(~atom_codes(L))),
 	C = ~run_(stop_ins,C0).
-run_(indirect_jump(L),C0) := C :-
+run_(indirect_jump(L),c(M,A)) := C :-
 	message(warning, ['Pass through an indirect jump, register: ', L]), % TODO: inefficient! (remember somewhere else)
 	new_indirect_jump(string(~atom_codes(L))),
-	C = ~run_(stop_ins,C0).
+        La = ~ev(L, A),
+        %write(La), nl,
+        F = ~concretize(La), % This is double the work since it is repeated in jump but ameks sure that indirect jumps are concrete
+        %write(F), nl,
+        integer(F),
+	C = ~run_(jmp(L),c(M,A)). % Instead of stopping as it was previous. we delegate to jump
 % 
 % Barrier
 run_(spbarr,c(M,A)) := c(M,A2) :-
@@ -262,7 +331,7 @@ run_(beqz(X,L),c(M,A)) := c(M,A2) :-
 	A2 = ~update0(A,pc,L2).
 % Jmp	
 run_(jmp(E),c(M,A)) := c(M,A2) :-
-	La = ~ev(E,A), % TODO: useful? it will show indirect jumps more easily
+        La = ~ev(E,A), % TODO: useful? it will show indirect jumps more easily
 	trace_pc(La),
 	L = ~concretize(La), % TODO: make symbolic if E is symbolic -> warning when is symbolic?
       	track_branch(L),

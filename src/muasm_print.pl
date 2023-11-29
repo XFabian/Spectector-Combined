@@ -35,7 +35,7 @@ pretty_print(CTs) :-
 pretty_print_(CTs0) :-
     CTs1 = ~remap(CTs0),
     CTs = ~noarr(CTs1),
-	varset(CTs, Vars),
+    varset(CTs, Vars),
 	unassign(Vars, Map),
 	numbervars(Vars, 0, _),
 	write('Assignments:'), nl,
@@ -50,12 +50,18 @@ remap1((C,T)) := (~remap_conf(C),T) :- !.
 remap1(triple(C0,T,C)) := triple(~remap_conf(C0),T,~remap_conf(C)) :-  !.
 remap1(X) := X.
 
+% Delegate back to the corresponding Config underneta
+remap_conf(f(X, C)) := C1 :- C1 = ~remap_conf(C), !.
+remap_conf(f(X, C, _)) := C1 :- C1 = ~remap_conf(C), !.
+
 remap_conf(xc(I,c(M,A),S)) := xc(I,c(~sym_to_map(M),~sym_to_map(A)),S) :- !.
 remap_conf(c(M,A)) := c(~sym_to_map(M),~sym_to_map(A)) :- !.
 
 remap_conf(xc_v5(I, c(M,A, ST), R, S)) := xc_v5(I, c(~sym_to_map(M),~sym_to_map(A), ST), R, S) :- !.
 
 remap_conf(xc_c(I,c(M,A),R, S)) := xc_c(I,c(~sym_to_map(M),~sym_to_map(A)),R, S) :- !. % New base combiantion
+remap_conf(xc_v2(I, c(M, A, _), S)) := xc(I, c(~sym_to_map(M),~sym_to_map(A)), S) :- !. % V2 keeps track of the endbr instructoins that are ignored here
+
 
 remap_conf(xc_v8(I, c(M,A, ST), R, S)) := xc_v8(I, c(~sym_to_map(M),~sym_to_map(A), ST), R, S) :- !.
 remap_conf(xc_v9(I, c(M,A, ST), R, S)) := xc_v9(I, c(~sym_to_map(M),~sym_to_map(A), ST), R, S) :- !. % 5  + 4+ 1
@@ -63,11 +69,14 @@ remap_conf(xc_v9(I, c(M,A, ST), R, S)) := xc_v9(I, c(~sym_to_map(M),~sym_to_map(
 remap_conf(xc14(I, c(M,A), S)) := xc14(I, c(~sym_to_map(M),~sym_to_map(A)), S) :-  !. % V4 + V1
 remap_conf(xc41(I, c(M,A), S)) := xc41(I, c(~sym_to_map(M),~sym_to_map(A)), S) :-  !.
 % are these even called? for reach1 it appears not the conf is given
-remap_conf(f(15, xc_v5(I, c(M,A, ST), R, S))) := xc_v5(I, c(~sym_to_map(M),~sym_to_map(A), ST), R, S) :- !.
-remap_conf(f(14, xc14(I, c(M,A), S))) := xc14(I, c(~sym_to_map(M),~sym_to_map(A)), S) :- !.
-remap_conf(f(45, xc_v8(I, c(M,A, ST), R, S))) := xc_v8(I, c(~sym_to_map(M),~sym_to_map(A), ST), R, S) :- !. % 5 + 4
-remap_conf(f(145, xc_v9(I, c(M,A, ST), R, S))) := xc_v9(I, c(~sym_to_map(M),~sym_to_map(A), ST), R, S) :- !. % 5 + 4 + 1
-remap_conf(f(41, xc41(I, c(M,A), S))) := xc41(I, c(~sym_to_map(M),~sym_to_map(A)), S) :- !.
+
+%remap_conf(f(15, xc_v5(I, c(M,A, ST), R, S))) := xc_v5(I, c(~sym_to_map(M),~sym_to_map(A), ST), R, S) :- !.
+%remap_conf(f(14, xc14(I, c(M,A), S))) := xc14(I, c(~sym_to_map(M),~sym_to_map(A)), S) :- !.
+%remap_conf(f(45, xc_v8(I, c(M,A, ST), R, S))) := xc_v8(I, c(~sym_to_map(M),~sym_to_map(A), ST), R, S) :- !. % 5 + 4
+%remap_conf(f(145, xc_v9(I, c(M,A, ST), R, S))) := xc_v9(I, c(~sym_to_map(M),~sym_to_map(A), ST), R, S) :- !. % 5 + 4 + 1
+%remap_conf(f(41, xc41(I, c(M,A), S))) := xc41(I, c(~sym_to_map(M),~sym_to_map(A)), S) :- !.
+%remap_conf(f(sls, xc(I, c(M,A), S))) := xc(I, c(~sym_to_map(M),~sym_to_map(A)), S) :- !.
+
 % remove array variables from symbolic constraints % TODO: make it optional
 noarr([]) := [].
 noarr([X|Xs]) := [~noarr1(X)| ~noarr(Xs)].

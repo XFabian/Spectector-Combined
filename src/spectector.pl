@@ -207,8 +207,8 @@ run(PrgFile, Opts) :-
 	( ConfContents = ~file_to_terms(~get_conf_file(Opts,Path)) % Code is written to take a file named "config" all other config files do not work.
 	; ConfContents = []
 	),
-	write(Opts),
-	write(ConfContents),
+	% write(Opts),
+	%write(ConfContents),
 	Options = ~flatten([Opts, ConfContents]),
 	% Initial configurations
 	extract_query(c(M0,A0), Options, [[],[]]),
@@ -291,7 +291,7 @@ run(PrgFile, Opts) :-
 	( member(noinit, Options) -> InitMem = no ; InitMem = yes ),
 	statistics(walltime, [TParse0, _]),
 	( Ext = '.s' ->
-	    Prg = ~translate_x86_to_muasm(gas, PrgFile, UseDump, Dic, KeepS, InitMem, HeapDir, memlocs(Memory0, Locs0)), write('Translated program'), nl
+	    Prg = ~translate_x86_to_muasm(gas, PrgFile, UseDump, Dic, KeepS, InitMem, HeapDir, memlocs(Memory0, Locs0))
 	; Ext = '.asm' ->
 	    Prg = ~translate_x86_to_muasm(intel, PrgFile, UseDump, Dic, KeepS, InitMem, HeapDir, memlocs(Memory0, Locs0))
 	; Ext = '.muasm' ->
@@ -304,9 +304,9 @@ run(PrgFile, Opts) :-
 	; Memory=Memory0, Locs=Locs0
 	),
 	TimeParse is TParse - TParse0,
-        write(Dic),
-        write(KeepS),
-	load_program(Prg,Locs), % (This instantiates labels too)
+	load_program(Prg,Locs, PIns), % (This instantiates labels too)
+        %write(PIns),
+        extract_endbr_loc(PIns, EndBrLoc), !, % Inserted a cut here so no backtrack
 	( print_defs ->
 	    write('program:'), nl,
 	    show_program
@@ -317,10 +317,10 @@ run(PrgFile, Opts) :-
 	  new_general_stat(name=string(~atom_codes(PrgFile)))
 	; true
 	),
-	analyze(Entries,Prg,Dic,c(M0,A0),Bp,Return,Sp,StatsOut, c(Memory, []), PrgFile, PrgNameExt, Opts, Ana).
+	analyze(Entries,Prg,Dic,c(M0,A0),Bp,Return,Sp,StatsOut, c(Memory, []), PrgFile, PrgNameExt, Opts, Ana, EndBrLoc).
 
-analyze([],_Prg,_Dic,_C0,_Bp,_Return,_Sp,_StatsOut,_C,_PrgFile,_PrgNameExt, _Opts, _Ana).
-analyze([Entry|Entries],Prg,Dic,c(M0,A0),Bp,Return,Sp,StatsOut, c(Memory, Assignments), PrgFile, PrgNameExt, Opts, Ana) :-
+analyze([],_Prg,_Dic,_C0,_Bp,_Return,_Sp,_StatsOut,_C,_PrgFile,_PrgNameExt, _Opts, _Ana, EndBrLoc).
+analyze([Entry|Entries],Prg,Dic,c(M0,A0),Bp,Return,Sp,StatsOut, c(Memory, Assignments), PrgFile, PrgNameExt, Opts, Ana, EndBrLoc) :-
        
 	init_paths, % Initialize number of paths traced
 	init_analysis_stats,
@@ -331,7 +331,6 @@ analyze([Entry|Entries],Prg,Dic,c(M0,A0),Bp,Return,Sp,StatsOut, c(Memory, Assign
 	A1 = ~append(A0, [pc=Entry, sp=Sp, bp=Bp|Assignments]),
 	translate_labels(M1, Dic, M),
 	translate_labels(A1, Dic, A),
-	%write(labels(Dic)), nl,
 	%
 	write('---------------------------------------------------------------------------'), nl,
 	write('prg='), writeq(PrgNameExt), write(', '), % program
@@ -348,21 +347,20 @@ analyze([Entry|Entries],Prg,Dic,c(M0,A0),Bp,Return,Sp,StatsOut, c(Memory, Assign
 	; true
 	),
         % Init the correct versions of configs
-        ( member(version(4), Opts) -> C1 = ~new_xc(M, A), C1 = xc(0, Conf, []), C0 = f(41, xc41(0, Conf, []));
+        (   member(version(1), Opts) -> C0 = ~new_xc(M,A);
+            member(version(4), Opts) -> C1 = ~new_xc(M, A), C1 = xc(0, Conf, []), C0 = f(4, xc41(0, Conf, []));
+            member(version(2), Opts) -> C0 = f(2, ~new_xc_v2(M, A, EndBrLoc)); % EndBRLoc should be data
+            member(version(6), Opts) -> C0 = f(sls, ~new_xc(M, A)); % SLS
             member(version(5), Opts) -> C0 = ~new_xc_v5(M,A);
-            member(version(15), Opts) -> C1 = ~new_xc_v5(M,A), C0 = f(15, C1) ;
-                member(version(14), Opts) -> C1 = ~new_xc14(M,A),  C0 = f(14, C1) ;
-                    member(version(45), Opts) -> C1 = ~new_xc_v8(M,A), C0 = f(45, C1) ;
-                        member(version(145), Opts) -> C1 = ~new_xc_v9(M,A), C0 = f(145, C1)
-                    ;
-                    C0 = ~initc(SpecOpt, M, A)),
+            member(version(X), Opts) -> C1 = ~new_xc_c(M,A), C0 = f(X, C1, EndBrLoc)
+            ;
+                C0 = ~initc(SpecOpt, M, A)),
+        %write(C0),
         % 15 is v5 and v1 combined
         % 14 is v4 and v1 combined
         % 45 is v4 and v5
         % 145 is v4 and v5 and v1
         % 41 is the new v4 semantics
-        %write('Using Spectre v4'), nl,
-        write(C0),
 	statistics(walltime, [T0, _]), % All magic is happening in runtest2. Everything before is setup
 	runtest2(Ana, C0),
         write('Finished statistics'), nl,
@@ -377,7 +375,7 @@ analyze([Entry|Entries],Prg,Dic,c(M0,A0),Bp,Return,Sp,StatsOut, c(Memory, Assign
 	  assert_analysis_stat(AtomEntry, StatsOut)
 	; true
 	),
-	analyze(Entries,Prg,Dic,c(M0,A0),Bp,Return,Sp,StatsOut,c(Memory, Assignments),PrgFile,PrgNameExt,SpecOpt,Ana).
+	analyze(Entries,Prg,Dic,c(M0,A0),Bp,Return,Sp,StatsOut,c(Memory, Assignments),PrgFile,PrgNameExt,SpecOpt,Ana, EndBrLoc).
 
 translate_labels([], _, []).
 translate_labels([K=V|KVs], Dic, [K=V2|KVs2]) :-
@@ -402,7 +400,7 @@ runtest2(reach1, C0) :- !,
 	( (C,Trace) = ~mrun(C0) ->  true ; fail ), % (only first path)
 	pretty_print([triple(C0,Trace,C)]).
 
-runtest2(noninter(Low), C0) :- !, write(Low),
+runtest2(noninter(Low), C0) :- !,
 	noninter_check(Low, C0).
 
 get_conf_file(Opts,Path) := ConfFile :-

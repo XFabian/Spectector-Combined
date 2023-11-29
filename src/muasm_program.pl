@@ -28,15 +28,18 @@
 :- export(loc/2).
 :- data loc/2.
 
-:- export(load_program/2).
+
+:- export(load_program/3).
 % load_program(+Ins,+Locs): 
 %   Load a program from Ins, filling instruction addresses and
 %   resolving labels.
-load_program(Ins,Locs) :-
+load_program(Ins,Locs, PIns) :-
 	muasm_operators,
 	retractall_fact(p(_,_)),
 	retractall_fact(loc(_,_)),
+        %write(' In load program' ), write(Ins), nl, write(Locs), nl,
 	asm(Ins, 0, PIns),
+        % write(PIns),
 	( ground(PIns) -> true
 	; message(warning, 'the program contains unresolved labels')
 	),
@@ -80,3 +83,10 @@ show_program :-
 muasm_operators :-
 	op(980, xfx, [(<-)]).
 
+% From PIns [p(0,endbr),p(1,rax<-2+2),p(2,skip),p(3,jmp(0))] looking like this we extract the locations of the endbr instructions
+:- export(extract_endbr_loc/2).
+extract_endbr_loc([], []).
+extract_endbr_loc([p(Addr, endbr)|Is], [Addr|I]) :-
+    extract_endbr_loc(Is, I).
+extract_endbr_loc([p(Addr, _)|Is], I) :-
+   !,  extract_endbr_loc(Is, I).

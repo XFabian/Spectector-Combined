@@ -82,7 +82,7 @@ xrunv4_1(xc41(Ctr,Conf, S)) := XC2 :-
     trace(rollback(ID)),
     ConfP2 = ~run1(ConfP),
     ConfP2 = c(M_2, A_2),
-    %write('Executing Rollback'),nl,
+    write('V4: Executing Rollback'),nl,
     trace(pc(~pc(A_2))), % order is now not exactly as before
     XC2 = xc41(Ctr,ConfP2, S2).
 
