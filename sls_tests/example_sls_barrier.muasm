@@ -1,0 +1,9 @@
+main:
+	skip
+	retstart
+	load tmp,sp/\140737488355327
+	sp <- sp+8
+	jmp tmp
+	spbarr
+	load eax, secret_addr % Should never be executed
+    	load edi, eax

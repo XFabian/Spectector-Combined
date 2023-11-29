@@ -1,0 +1,13 @@
+spec:
+	endbr
+	spbarr
+	load eax, secret_addr
+    	load edi, eax
+main:
+	rax <- fin
+	skip
+	indirect_jump rax
+	endbr
+
+fin:
+	skip
