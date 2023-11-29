@@ -16,5 +16,5 @@ void case_2(uint32_t idx) {
   idx = idx & (array_size - 1);
 
   /* Access overwritten secret */
-  temp &= publicarray2[publicarray[idx] * 512];
+  temp &= publicarray2[secretarray[idx] * 512];
 }
