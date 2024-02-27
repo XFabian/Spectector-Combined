@@ -4,7 +4,7 @@ This is an extension of  [Spectector](https://github.com/spectector/spectector) 
 # Installation Guide
 - Follow the installation guide of [Spectector](https://github.com/spectector/spectector)
 - After installation, replace the spectector folder with this whole repository.
-- Replace muasm_translator/ with the provided version here as well.
+- Replace muasm_translator/src/ with the provided version here as well.
 - Afterwards, build the tool new by doing ciao build in the command line.
 
 # Tests
